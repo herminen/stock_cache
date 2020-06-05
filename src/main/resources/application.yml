@@ -16,3 +16,22 @@ spring:
     ehcache:
       type: ehcache
       config: classpath:ehcache.xml
+
+  kafka:
+    bootstrap-servers:
+      - 192.168.79.130:9092
+      - 192.168.79.131:9092
+      - 192.168.79.132:9092
+    producer:
+      retries: 0
+      batch-size: 16384
+      buffer-memory: 33554432
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      # 指定默认消费者group id
+      group-id: stock-cache
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

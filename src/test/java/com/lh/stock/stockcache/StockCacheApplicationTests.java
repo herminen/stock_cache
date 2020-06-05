@@ -23,6 +23,9 @@ class StockCacheApplicationTests {
         System.out.println("------------------------------------------------");
         goodsInfoService.updateGoodsBaseInfo(goodsBaseInfo);
         System.out.println(goodsInfoService.getGoodsBaseInfoById(1L));
+        goodsInfoService.removeGoodsBaseInfo(1L);
+        System.out.println("------------------------------------------------");
+        System.out.println(goodsInfoService.getGoodsBaseInfoById(1L));
     }
 
 }

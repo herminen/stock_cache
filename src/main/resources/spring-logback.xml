@@ -74,8 +74,6 @@ debug：当此属性设置为true时，将打印出logback内部日志信息，�
 　　　　　开发环境：
 　　　　　　　类中引入了logger日志对象时，level级别用info,debug都可以，都有错误信息输出。
 　　 -->
-    <!-- hibernate logger -->
-    <logger name="com.lh.stock.lhstock" level="info" />
     <!-- Spring framework logger -->
     <logger name="org.springframework" level="debug" additivity="false"></logger>
 

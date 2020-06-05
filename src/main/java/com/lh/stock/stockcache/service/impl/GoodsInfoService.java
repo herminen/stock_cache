@@ -2,12 +2,13 @@ package com.lh.stock.stockcache.service.impl;
 
 import com.lh.stock.stockcache.domain.GoodsBaseInfo;
 import com.lh.stock.stockcache.service.IGoodsInfoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 /**
  * @Author: liuhai
@@ -17,13 +18,22 @@ import java.util.Map;
 @CacheConfig(cacheNames = {"goodsBaseInfo"})
 public class GoodsInfoService implements IGoodsInfoService {
 
-    @Cacheable(key ="'key_'+#goodsId" )
+    private static Logger logger = LoggerFactory.getLogger(GoodsInfoService.class);
+
+    @Cacheable(key = "'key_'+#goodsId" )
     public GoodsBaseInfo getGoodsBaseInfoById(Long goodsId){
+        logger.warn("fetch goods info by id {}", goodsId);
         return null;
     }
 
     @CachePut(key = "'key_'+#goodsBaseInfo.getGoodsId()")
     public GoodsBaseInfo updateGoodsBaseInfo(GoodsBaseInfo goodsBaseInfo){
+        logger.warn("refresh goods info  {}", goodsBaseInfo);
         return goodsBaseInfo;
+    }
+
+    @CacheEvict(key = "'key_'+#goodsId")
+    public void removeGoodsBaseInfo(Long goodsId){
+        logger.warn("remove goods info by id {}", goodsId);
     }
 }

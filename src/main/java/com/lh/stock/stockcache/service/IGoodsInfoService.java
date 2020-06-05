@@ -22,4 +22,10 @@ public interface IGoodsInfoService {
      * @param goodsBaseInfo
      */
     GoodsBaseInfo updateGoodsBaseInfo(GoodsBaseInfo goodsBaseInfo);
+
+    /**
+     * 删除商品基本信息
+     * @param goodsId
+     */
+    void removeGoodsBaseInfo(Long goodsId);
 }
