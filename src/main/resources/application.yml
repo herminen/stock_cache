@@ -1,2 +1,18 @@
 server:
   port: 8888
+
+spring:
+  ##redis
+  redis:
+    cluster:
+      nodes:
+      - 192.168.79.130:7001
+      - 192.168.79.131:7003
+      - 192.168.79.132:7005
+      max-redirects: 5
+
+  ##ehcache config
+  cache:
+    ehcache:
+      type: ehcache
+      config: classpath:ehcache.xml
