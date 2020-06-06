@@ -14,11 +14,11 @@ import org.springframework.stereotype.Service;
  * @Author: liuhai
  * @Date: 2020/6/5 15:02
  */
-@Service
+@Service("goodsInfoHeapService")
 @CacheConfig(cacheNames = {"goodsBaseInfo"})
-public class GoodsInfoService implements IGoodsInfoService {
+public class GoodsInfoHeapService implements IGoodsInfoService {
 
-    private static Logger logger = LoggerFactory.getLogger(GoodsInfoService.class);
+    private static Logger logger = LoggerFactory.getLogger(GoodsInfoHeapService.class);
 
     @Cacheable(key = "'key_'+#goodsId" )
     public GoodsBaseInfo getGoodsBaseInfoById(Long goodsId){
