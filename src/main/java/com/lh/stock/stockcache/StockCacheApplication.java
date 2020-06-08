@@ -9,7 +9,6 @@ import org.springframework.kafka.annotation.EnableKafkaStreams;
 @SpringBootApplication
 @EnableCaching
 @EnableKafka
-@EnableKafkaStreams
 public class StockCacheApplication {
 
     public static void main(String[] args) {

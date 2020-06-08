@@ -1,5 +1,5 @@
 server:
-  port: 8888
+  port: 8090
 
 spring:
   ##redis
@@ -37,3 +37,7 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     streams:
       application-id: stock-cache
+    listener:
+      ack-mode: manual
+    template:
+      default-topic: stock-test
