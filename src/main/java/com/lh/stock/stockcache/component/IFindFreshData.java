@@ -8,7 +8,7 @@ import com.lh.stock.stockcache.domain.KafkaMsgContext;
  */
 public interface IFindFreshData<T> {
 
-    void findData(KafkaMsgContext msgContext);
+    T findData(KafkaMsgContext msgContext);
 
     boolean matchKafkaMsg(KafkaMsgContext<T> msgContext);
 }

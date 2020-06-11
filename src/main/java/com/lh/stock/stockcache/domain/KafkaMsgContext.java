@@ -2,6 +2,7 @@ package com.lh.stock.stockcache.domain;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -10,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Getter
 @Setter
+@ToString
 public class KafkaMsgContext<T> {
 
     private String requestId;
@@ -18,10 +20,16 @@ public class KafkaMsgContext<T> {
 
     private T cacheData;
 
+    public KafkaMsgContext(String requestId, String msgType) {
+        this.requestId = requestId;
+        this.msgType = msgType;
+    }
+
     public boolean matchMsg(String msgTag){
         if(StringUtils.isBlank(msgTag) || StringUtils.isBlank(msgType)){
             return false;
         }
-        return msgTag.equals(msgTag);
+        return msgType.equals(msgTag);
     }
+
 }

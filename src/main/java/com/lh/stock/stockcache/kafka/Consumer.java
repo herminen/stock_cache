@@ -4,12 +4,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.lh.stock.stockcache.component.IFindFreshData;
 import com.lh.stock.stockcache.component.IFreshCache;
 import com.lh.stock.stockcache.domain.KafkaMsgContext;
+import com.lh.stock.stockcache.service.IFindDataService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +31,12 @@ public class Consumer implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
 
+    @Autowired
+    private IFreshCache freshCache;
+
+    @Autowired
+    private IFindDataService findDataService;
+
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
@@ -44,39 +52,14 @@ public class Consumer implements ApplicationContextAware {
             //解析消息
             KafkaMsgContext msgContext = JSONObject.parseObject(record.value(), KafkaMsgContext.class);
             //调用接口查询数据
-            fetchFreshData(msgContext);
+            msgContext.setCacheData(findDataService.fetchFreshData(msgContext));
             //操作缓存
-            cacheData(msgContext);
+            freshCache.cacheData(msgContext);
             ack.acknowledge();
         } catch (Exception e){
             logger.error("deal kafka msg error.", e);
+            ack.acknowledge();
         }
     }
 
-    /**
-     * 保存进对缓存和redis缓存
-     * @param msgContext
-     */
-    private void cacheData(KafkaMsgContext msgContext) {
-        Map<String, IFreshCache> freshCacheDataMap = applicationContext.getBeansOfType(IFreshCache.class);
-        for (IFreshCache freshCacheData : freshCacheDataMap.values()) {
-            if(freshCacheData.matchKafkaMsg(msgContext)){
-                freshCacheData.cacheData(msgContext);
-            }
-        }
-    }
-
-    /**
-     * 查找需要更新缓存的数据，可能会查数据库，调服务化接口等
-     * @param msgContext
-     */
-    private void fetchFreshData(KafkaMsgContext msgContext) {
-        Map<String, IFindFreshData> findCacheDataMap = applicationContext.getBeansOfType(IFindFreshData.class);
-        for (IFindFreshData findCacheData : findCacheDataMap.values()) {
-            if(findCacheData.matchKafkaMsg(msgContext)){
-                findCacheData.findData(msgContext);
-                return;
-            }
-        }
-    }
 }
