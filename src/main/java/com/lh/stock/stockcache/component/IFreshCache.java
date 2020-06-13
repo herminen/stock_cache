@@ -8,6 +8,4 @@ import com.lh.stock.stockcache.domain.KafkaMsgContext;
  */
 public interface IFreshCache<T> {
     void cacheData(KafkaMsgContext<T> msgContext);
-
-    boolean matchKafkaMsg(KafkaMsgContext<T> msgContext);
 }
