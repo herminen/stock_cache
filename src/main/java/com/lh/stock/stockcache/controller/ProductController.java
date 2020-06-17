@@ -1,15 +1,12 @@
 package com.lh.stock.stockcache.controller;
 
 import com.alibaba.fastjson.JSONObject;
-import com.lh.stock.stockcache.constant.KafkaMsgConstants;
 import com.lh.stock.stockcache.domain.KafkaMsgContext;
 import com.lh.stock.stockcache.domain.ProductBaseInfo;
 import com.lh.stock.stockcache.domain.ShopBaseInfo;
-import com.lh.stock.stockcache.kafka.Consumer;
 import com.lh.stock.stockcache.kafka.Producer;
 import com.lh.stock.stockcache.service.ICacheInfoService;
 import com.lh.stock.stockcache.service.IFindDataService;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
