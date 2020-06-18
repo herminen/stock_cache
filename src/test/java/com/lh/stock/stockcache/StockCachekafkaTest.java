@@ -27,9 +27,14 @@ public class StockCachekafkaTest {
     }
 
     @Test
-    public void testDistributeLock() throws KeeperException, InterruptedException {
-        zookeeperSession.acquireDistributeLock("/stock_cache/product_lock_100001");
-        zookeeperSession.acquireDistributeLock("/stock_cache/product_lock_100001");
+    public void testDistributeLock() {
+
+        try {
+            zookeeperSession.acquireDistributeLock("/stock_cache/product_lock_100001");
+            zookeeperSession.acquireDistributeLock("/stock_cache/product_lock_100001");
+        } catch (KeeperException | InterruptedException e) {
+
+        }
         zookeeperSession.releaseDistributeLock("/stock_cache/product_lock_100001");
 
     }
