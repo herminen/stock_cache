@@ -1,6 +1,9 @@
 package com.lh.stock.stockcache;
 
 import com.lh.stock.stockcache.kafka.Consumer;
+import com.lh.stock.stockcache.zk.ZookeeperSession;
+import org.apache.storm.utils.Utils;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +18,19 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 public class StockCachekafkaTest {
 
+    @Autowired
+    private ZookeeperSession zookeeperSession;
 
     @Test
     public void testKafkaConsumer() throws InterruptedException {
         Thread.sleep(100000L);
+    }
+
+    @Test
+    public void testDistributeLock() throws KeeperException, InterruptedException {
+        zookeeperSession.acquireDistributeLock("/stock_cache/product_lock_100001");
+        zookeeperSession.acquireDistributeLock("/stock_cache/product_lock_100001");
+        zookeeperSession.releaseDistributeLock("/stock_cache/product_lock_100001");
+
     }
 }
