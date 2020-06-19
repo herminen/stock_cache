@@ -63,19 +63,19 @@ public class ProductController {
 
     @GetMapping("/getShopInfo")
     @ResponseBody
-    public String getShopInfo(@RequestParam("shop") Long shop){
+    public String getShopInfo(@RequestParam("shopId") Long shopId){
         //查找redis缓存
-        ShopBaseInfo shopBaseInfo = (ShopBaseInfo) shopInfoRedisService.getCacheInfoById(shop);
+        ShopBaseInfo shopBaseInfo = (ShopBaseInfo) shopInfoRedisService.getCacheInfoById(shopId);
         if(null != shopBaseInfo){
             return JSONObject.toJSONString(shopBaseInfo);
         }
         //查找堆缓存
-        shopBaseInfo = (ShopBaseInfo) shopInfoHeapService.getCacheInfoById(shop);
+        shopBaseInfo = (ShopBaseInfo) shopInfoHeapService.getCacheInfoById(shopId);
         if(null != shopBaseInfo){
             return JSONObject.toJSONString(shopBaseInfo);
         }
         //查询数据库，更新缓存
-        KafkaMsgContext msgContext = new KafkaMsgContext(String.valueOf(shop), SHOP_BASE_INFO);
+        KafkaMsgContext msgContext = new KafkaMsgContext(String.valueOf(shopId), SHOP_BASE_INFO);
         producer.sendMessage(msgContext);
         return JSONObject.toJSONString(findDataService.fetchFreshData(msgContext));
     }
