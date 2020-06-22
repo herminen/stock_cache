@@ -1,6 +1,5 @@
-package com.lh.stock.stockcache.storm.bout;
+package com.lh.stock.stockcache.storm.bolt;
 
-import com.google.common.collect.Maps;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -17,14 +16,12 @@ import java.util.Map;
  * Created with IntelliJ IDEA.
  * User: ASUS
  * Date: 2020/6/13
- * Time: 23:55
+ * Time: 23:42
  * Description: No Description
  */
-public class CountBout extends BaseRichBolt {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CountBout.class);
-    private static final long serialVersionUID = -4423616713382067808L;
-    private Map<String, Long> wordCount = Maps.newHashMapWithExpectedSize(100);
-
+public class SplitBolt extends BaseRichBolt {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SplitBolt.class);
+    private static final long serialVersionUID = 8704028504006847672L;
     private OutputCollector outputCollector;
 
     @Override
@@ -34,20 +31,15 @@ public class CountBout extends BaseRichBolt {
 
     @Override
     public void execute(Tuple tuple) {
-        String word = tuple.getStringByField("word");
-        Long count = wordCount.get(word);
-        if(null == count){
-            count = 0L;
+        String sentence = tuple.getStringByField("sentence");
+        String[] words = sentence.split(" ");
+        for (String word : words) {
+            outputCollector.emit(new Values(word));
         }
-        count++;
-        wordCount.put(word, count);
-        LOGGER.info("【单词计数】" + word + "出现的次数是" + count);
-
-        outputCollector.emit(new Values(word, count));
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declare(new Fields("word", "count"));
+        outputFieldsDeclarer.declare(new Fields("word"));
     }
 }
