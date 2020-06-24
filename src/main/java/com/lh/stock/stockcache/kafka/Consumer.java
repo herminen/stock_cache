@@ -1,12 +1,10 @@
 package com.lh.stock.stockcache.kafka;
 
 import com.alibaba.fastjson.JSONObject;
-import com.lh.stock.stockcache.component.IFindFreshData;
 import com.lh.stock.stockcache.component.IFreshCache;
 import com.lh.stock.stockcache.domain.KafkaMsgContext;
 import com.lh.stock.stockcache.service.IFindDataService;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,12 +12,9 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 /**
  * @Author: liuhai

@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
+import static com.lh.stock.stockcache.constant.ComConstants.SEP_SLASH;
+
 /**
  * @Author: liuhai
  * @Date: 2020/6/18 10:09
@@ -83,6 +85,52 @@ public class ZookeeperSession implements ApplicationContextAware, InitializingBe
             logger.error("release lock for resource=[" + resource + "]");
         } catch (InterruptedException | KeeperException e) {
             logger.error("release lock for resource=" + resource + " error:", e);
+        }
+    }
+
+    /**
+     * 创建节点
+     * @param node
+     * @param isPersist
+     * @throws KeeperException
+     * @throws InterruptedException
+     */
+    public void createPersistNode(String node, boolean isPersist) throws KeeperException, InterruptedException {
+        if(StringUtils.isBlank(node)){
+            throw new IllegalArgumentException("lock node can not be null or blank");
+        }
+        try {
+            if(node.indexOf(SEP_SLASH) > -1){
+                String[] nodes = node.split(SEP_SLASH);
+                String prePath = "";
+                for (String nodeName : nodes) {
+                    if(null == zooKeeper.exists(prePath + SEP_SLASH + nodeName, true)){
+                        zooKeeper.create(nodeName, DEFAULT_LOCK_VALUE.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                                isPersist ? CreateMode.PERSISTENT : CreateMode.PERSISTENT);
+                        logger.warn("success to acquire lock for resource=[" + nodeName + "]");
+                        prePath = SEP_SLASH + nodeName;
+                    }
+                }
+            }
+        } catch (KeeperException | InterruptedException e ) {
+            logger.error("create persistNode error: ", e);
+            throw e;
+        }
+    }
+
+    /**
+     * 设置节点数据
+     * @param node
+     * @param value
+     * @throws KeeperException
+     * @throws InterruptedException
+     */
+    public void setNodeValue(String node, String value) throws KeeperException, InterruptedException {
+        try {
+            zooKeeper.setData(node, value.getBytes(), -1);
+        }catch (Exception e){
+            logger.error("set node value error: ", e);
+            throw e;
         }
     }
 
