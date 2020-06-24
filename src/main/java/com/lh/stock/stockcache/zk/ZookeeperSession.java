@@ -2,6 +2,7 @@ package com.lh.stock.stockcache.zk;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.zookeeper.*;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -11,8 +12,10 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;
 
+import static com.lh.stock.stockcache.constant.CacheKeyConstants.ZK_STOCK_CACHE;
 import static com.lh.stock.stockcache.constant.ComConstants.SEP_SLASH;
 
 /**
@@ -37,10 +40,10 @@ public class ZookeeperSession implements ApplicationContextAware, InitializingBe
             zooKeeper = new ZooKeeper(applicationContext.getEnvironment().getProperty("zookeeper.hosts"),
                     5000, this);
 
-            if(null != zooKeeper.exists("/stock_cache", true)){
-                zooKeeper.delete("/stock_cache", -1);
+            if(null != zooKeeper.exists(ZK_STOCK_CACHE, true)){
+                zooKeeper.delete(ZK_STOCK_CACHE, -1);
             }
-            zooKeeper.create("/stock_cache", "".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            zooKeeper.create(ZK_STOCK_CACHE, "".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
             COUNT_DOWN_LATCH.await();
             logger.warn("ZooKeeper session established......");
@@ -130,6 +133,15 @@ public class ZookeeperSession implements ApplicationContextAware, InitializingBe
             zooKeeper.setData(node, value.getBytes(), -1);
         }catch (Exception e){
             logger.error("set node value error: ", e);
+            throw e;
+        }
+    }
+
+    public String getNodeValue(String node) throws KeeperException, InterruptedException {
+        try {
+            return new String(zooKeeper.getData(node, this, new Stat()), Charset.forName("UTF-8"));
+        }catch (Exception e){
+            logger.error("get node value error: ", e);
             throw e;
         }
     }

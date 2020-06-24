@@ -4,18 +4,24 @@ import com.alibaba.fastjson.JSONObject;
 import com.lh.stock.stockcache.domain.HotProdInfo;
 import com.lh.stock.stockcache.storm.bolt.CountBolt;
 import com.lh.stock.stockcache.zk.ZookeeperSession;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.trident.util.LRUMap;
 import org.apache.storm.tuple.Tuple;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+
+import static com.lh.stock.stockcache.constant.CacheKeyConstants.ZK_HOT_PROD_CACHE;
+import static com.lh.stock.stockcache.constant.CacheKeyConstants.ZK_STOCK_CACHE;
+import static com.lh.stock.stockcache.constant.ComConstants.SEP_COMA;
 
 /**
  * @Author: liuhai
@@ -31,12 +37,42 @@ public class SplitHotProdBolt extends BaseRichBolt {
 
     private LRUMap<Long, HotProdInfo> hotProdInfoCache = new LRUMap<Long, HotProdInfo>(1000);
 
+    private String hotProdCacheTaskId;
+
     @Autowired
     private ZookeeperSession zookeeperSession;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
+        this.hotProdCacheTaskId = ZK_HOT_PROD_CACHE + context.getThisTaskId();
+        recordHotProdCacheId();
+    }
+
+    /**
+     * 记录缓存任务id
+     */
+    private void recordHotProdCacheId() {
+        //在zk上创建热点缓存列表信息
+        try {
+            String hotProdLock = ZK_STOCK_CACHE + "/hot_prod_lock";
+            zookeeperSession.acquireDistributeLock(hotProdLock);
+            String hotProdList = ZK_STOCK_CACHE + "/hot_prod_list";
+            zookeeperSession.createPersistNode(hotProdList, true);
+            String nodeValue = zookeeperSession.getNodeValue(hotProdList);
+            if(nodeValue.indexOf(hotProdList) > -1){
+                return;
+            }
+            if(StringUtils.isBlank(nodeValue)){
+                nodeValue += hotProdCacheTaskId;
+            }else{
+                nodeValue += SEP_COMA + hotProdCacheTaskId;
+            }
+            zookeeperSession.setNodeValue(hotProdList, nodeValue);
+            zookeeperSession.releaseDistributeLock(hotProdLock);
+        } catch (KeeperException | InterruptedException e) {
+            LOGGER.error("create cache period error", e);
+        }
     }
 
     @Override

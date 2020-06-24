@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
  * @Author: liuhai
  * @Date: 2020/6/6 11:49
  */
-@Service
+//@Service
 public class Consumer implements ApplicationContextAware {
     private final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
