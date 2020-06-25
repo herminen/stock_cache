@@ -60,7 +60,7 @@ public class ZookeeperSession implements ApplicationContextAware, InitializingBe
             zooKeeper.create(resource, DEFAULT_LOCK_VALUE.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
             logger.warn("success to acquire lock for resource=[" + resource + "]");
         } catch (KeeperException | InterruptedException e ) {
-            logger.error("create lock node error when acquire distribute lock: ");
+            logger.error("create lock node error when acquire distribute lock: ", e);
             // 如果那个商品对应的锁的node，已经存在了，就是已经被别人加锁了，那么就这里就会报错
             // NodeExistsException
             int count = 0;
@@ -70,9 +70,9 @@ public class ZookeeperSession implements ApplicationContextAware, InitializingBe
                     zooKeeper.create(resource, DEFAULT_LOCK_VALUE.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
                 } catch (Exception e2) {
                     logger.error("can not get distribute lock for resource[" + resource + "]");
-                    if(count >=10){
+                    /*if(count >=10){
                         throw e;
-                    }
+                    }*/
                     count++;
                     continue;
                 }

@@ -1,8 +1,12 @@
 package com.lh.stock.stockcache.storm.bolt.hotprod;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Lists;
 import com.lh.stock.stockcache.domain.HotProdInfo;
 import com.lh.stock.stockcache.storm.bolt.CountBolt;
+import com.lh.stock.stockcache.storm.hotcache.IMakeHotCache;
+import com.lh.stock.stockcache.storm.hotcache.impl.MakeHotProductCache;
 import com.lh.stock.stockcache.zk.ZookeeperSession;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.storm.task.OutputCollector;
@@ -11,12 +15,14 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.trident.util.LRUMap;
 import org.apache.storm.tuple.Tuple;
+import org.apache.storm.utils.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 import static com.lh.stock.stockcache.constant.CacheKeyConstants.ZK_HOT_PROD_CACHE;
@@ -47,6 +53,25 @@ public class SplitHotProdBolt extends BaseRichBolt {
         this.collector = collector;
         this.hotProdCacheTaskId = ZK_HOT_PROD_CACHE + context.getThisTaskId();
         recordHotProdCacheId();
+        startRefreshHotProdCacheThread();
+    }
+
+    /**
+     * 启动更新热点缓存线程
+     */
+    private void startRefreshHotProdCacheThread() {
+        new Thread(() ->{
+            IMakeHotCache<HotProdInfo> makeHotCache = new MakeHotProductCache(hotProdInfoCache);
+            while(true) {
+                try {
+                    zookeeperSession.createPersistNode(hotProdCacheTaskId, false);
+                    zookeeperSession.setNodeValue(hotProdCacheTaskId, JSONArray.toJSONString(makeHotCache.makeCache()));
+                } catch (KeeperException | InterruptedException e) {
+                    LOGGER.error("record cache to zookeeper error", e);
+                }
+                Utils.sleep(5000);
+            }
+        }).start();
     }
 
     /**
