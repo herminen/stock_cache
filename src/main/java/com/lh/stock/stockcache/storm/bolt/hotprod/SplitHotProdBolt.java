@@ -57,24 +57,6 @@ public class SplitHotProdBolt extends BaseRichBolt {
     }
 
     /**
-     * 启动更新热点缓存线程
-     */
-    private void startRefreshHotProdCacheThread() {
-        new Thread(() ->{
-            IMakeHotCache<HotProdInfo> makeHotCache = new MakeHotProductCache(hotProdInfoCache);
-            while(true) {
-                try {
-                    zookeeperSession.createPersistNode(hotProdCacheTaskId, false);
-                    zookeeperSession.setNodeValue(hotProdCacheTaskId, JSONArray.toJSONString(makeHotCache.makeCache()));
-                } catch (KeeperException | InterruptedException e) {
-                    LOGGER.error("record cache to zookeeper error", e);
-                }
-                Utils.sleep(5000);
-            }
-        }).start();
-    }
-
-    /**
      * 记录缓存任务id
      */
     private void recordHotProdCacheId() {
@@ -100,11 +82,33 @@ public class SplitHotProdBolt extends BaseRichBolt {
         }
     }
 
+    /**
+     * 启动更新热点缓存线程
+     */
+    private void startRefreshHotProdCacheThread() {
+        new Thread(() ->{
+            IMakeHotCache<HotProdInfo> makeHotCache = new MakeHotProductCache(hotProdInfoCache);
+            while(true) {
+                try {
+                    zookeeperSession.createPersistNode(hotProdCacheTaskId, false);
+                    zookeeperSession.setNodeValue(hotProdCacheTaskId, JSONArray.toJSONString(makeHotCache.makeCache()));
+                } catch (KeeperException | InterruptedException e) {
+                    LOGGER.error("record cache to zookeeper error", e);
+                }
+                Utils.sleep(5000);
+            }
+        }).start();
+    }
+
     @Override
     public void execute(Tuple input) {
         String hotProdInfo = input.getStringByField("hotProdInfo");
         LOGGER.warn("get hotprodcache: {}", hotProdInfo);
         HotProdInfo hotProdCache = JSONObject.parseObject(hotProdInfo, HotProdInfo.class);
+        if(hotProdInfoCache.containsKey(hotProdCache.getProdId())){
+            hotProdCache.increaseVisitCount();
+            hotProdInfoCache.remove(hotProdCache.getProdId());
+        }
         hotProdInfoCache.put(hotProdCache.getProdId(), hotProdCache);
     }
 

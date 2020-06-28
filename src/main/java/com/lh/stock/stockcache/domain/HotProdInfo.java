@@ -19,8 +19,14 @@ public class HotProdInfo {
 
     private Long shopId;
 
+    private Integer visitCount;
+
     public String getProdIdString(){
         return String.valueOf(prodId);
+    }
+
+    public void increaseVisitCount(){
+        visitCount++;
     }
 
 }

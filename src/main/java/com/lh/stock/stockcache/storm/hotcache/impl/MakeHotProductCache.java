@@ -1,10 +1,15 @@
 package com.lh.stock.stockcache.storm.hotcache.impl;
 
+import com.google.common.collect.Lists;
 import com.lh.stock.stockcache.domain.HotProdInfo;
 import com.lh.stock.stockcache.storm.hotcache.IMakeHotCache;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.storm.trident.util.LRUMap;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Created with IntelliJ IDEA.
@@ -23,6 +28,11 @@ public class MakeHotProductCache implements IMakeHotCache<HotProdInfo> {
 
     @Override
     public List<HotProdInfo> makeCache() {
-        return null;
+        if(MapUtils.isEmpty(hotProdInfoLRUMap)){
+            return Collections.emptyList();
+        }
+        TreeSet<HotProdInfo> sortedList = new TreeSet<>((o1, o2) -> o2.getVisitCount().compareTo(o1.getVisitCount()));
+        hotProdInfoLRUMap.values().stream().forEachOrdered(hotProdInfo -> {sortedList.add(hotProdInfo);});
+        return Lists.newArrayList(sortedList);
     }
 }
