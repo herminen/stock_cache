@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Map;
@@ -25,15 +26,17 @@ import java.util.Properties;
  * @Author: liuhai
  * @Date: 2020/6/22 10:45
  */
+@Component
 public class HotProductSpout extends BaseRichSpout {
+
+    @Autowired
+    private transient ConsumerFactory<String, String> consumerFactory;
 
     private Logger logger = LoggerFactory.getLogger(HotProductSpout.class);
 
     private SpoutOutputCollector outputCollector;
 
-    private KafkaConsumer<String, String> hotProdInfoConsumer;
-    @Autowired
-    private ConsumerFactory<String, String> consumerFactory;
+    private transient KafkaConsumer<String, String> hotProdInfoConsumer;
 
 
     @Override

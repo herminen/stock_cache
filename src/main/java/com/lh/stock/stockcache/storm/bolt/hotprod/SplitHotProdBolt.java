@@ -19,7 +19,12 @@ import org.apache.storm.utils.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.data.annotation.Transient;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -34,10 +39,10 @@ import static com.lh.stock.stockcache.constant.ComConstants.SEP_COMA;
  * @Date: 2020/6/22 11:44
  */
 @Component
-public class SplitHotProdBolt extends BaseRichBolt {
+public class SplitHotProdBolt extends BaseRichBolt{
+    private static final long serialVersionUID = 7386047123242242362L;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CountBolt.class);
-    private static final long serialVersionUID = 7386047123242242362L;
 
     private OutputCollector collector;
 

@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;
 
@@ -23,9 +24,12 @@ import static com.lh.stock.stockcache.constant.ComConstants.SEP_SLASH;
  * @Date: 2020/6/18 10:09
  */
 @Component
-public class ZookeeperSession implements ApplicationContextAware, InitializingBean,Watcher {
+public class ZookeeperSession implements Serializable, ApplicationContextAware, InitializingBean, Watcher {
 
-    private ApplicationContext applicationContext;
+    private static final long serialVersionUID = -2111127689003379972L;
+
+
+    private transient ApplicationContext applicationContext;
 
     private String DEFAULT_LOCK_VALUE = "1";
 
@@ -33,7 +37,7 @@ public class ZookeeperSession implements ApplicationContextAware, InitializingBe
 
     private static final CountDownLatch COUNT_DOWN_LATCH = new CountDownLatch(1);
 
-    private ZooKeeper zooKeeper;
+    private transient ZooKeeper zooKeeper;
 
     public void init(){
         try {
