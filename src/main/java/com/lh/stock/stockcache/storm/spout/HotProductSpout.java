@@ -14,9 +14,11 @@ import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
 import java.time.Duration;
 import java.util.Map;
@@ -26,11 +28,8 @@ import java.util.Properties;
  * @Author: liuhai
  * @Date: 2020/6/22 10:45
  */
-@Component
 public class HotProductSpout extends BaseRichSpout {
 
-    @Autowired
-    private transient ConsumerFactory<String, String> consumerFactory;
 
     private Logger logger = LoggerFactory.getLogger(HotProductSpout.class);
 
@@ -38,11 +37,16 @@ public class HotProductSpout extends BaseRichSpout {
 
     private transient KafkaConsumer<String, String> hotProdInfoConsumer;
 
+    private transient ApplicationContext applicationContext;
+    private transient DefaultKafkaConsumerFactory consumerFactory;
+
 
     @Override
     public void open(Map config, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
         this.outputCollector = spoutOutputCollector;
-        this.hotProdInfoConsumer = (KafkaConsumer<String, String>)((DefaultKafkaConsumerFactory)consumerFactory).
+        applicationContext = new AnnotationConfigWebApplicationContext();
+        consumerFactory = (DefaultKafkaConsumerFactory) applicationContext.getBean("kafkaConsumerFactory");
+        this.hotProdInfoConsumer = (KafkaConsumer<String, String>) consumerFactory.
                 createConsumer(null, null, null, initAndGetConsumerProperties());
         hotProdInfoConsumer.subscribe(Lists.newArrayList("log-product"));
     }

@@ -26,10 +26,6 @@ public class CheckHotCacheListener{
 
     private Logger logger = LoggerFactory.getLogger(CheckHotCacheListener.class);
 
-    @Autowired
-    private HotProductSpout hotProductSpout;
-    @Autowired
-    private SplitHotProdBolt splitHotProdBolt;
 
     private LocalCluster cluster = new LocalCluster();
 
@@ -39,9 +35,9 @@ public class CheckHotCacheListener{
         logger.warn("begin to start topology to deal with hot product data...");
         TopologyBuilder hotProdCacheTopology = new TopologyBuilder();
         //set hot product cache data source
-        hotProdCacheTopology.setSpout("hotProdCacheSpout", hotProductSpout, 1);
+        hotProdCacheTopology.setSpout("hotProdCacheSpout", new HotProductSpout(), 1);
         //add bolt to record cache data
-        hotProdCacheTopology.setBolt("hotProdCacheBolt", splitHotProdBolt, 1)
+        hotProdCacheTopology.setBolt("hotProdCacheBolt", new SplitHotProdBolt(), 1)
                 .setNumTasks(2).fieldsGrouping("hotProdCacheSpout", new Fields("hotProdInfo"));
 
         Config config = new Config();

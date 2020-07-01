@@ -26,6 +26,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.annotation.Transient;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,6 @@ import static com.lh.stock.stockcache.constant.ComConstants.SEP_COMA;
  * @Author: liuhai
  * @Date: 2020/6/22 11:44
  */
-@Component
 public class SplitHotProdBolt extends BaseRichBolt{
     private static final long serialVersionUID = 7386047123242242362L;
 
@@ -50,13 +50,16 @@ public class SplitHotProdBolt extends BaseRichBolt{
 
     private String hotProdCacheTaskId;
 
-    @Autowired
-    private ZookeeperSession zookeeperSession;
+    private transient ZookeeperSession zookeeperSession;
+
+    private transient ApplicationContext applicationContext;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
         this.hotProdCacheTaskId = ZK_HOT_PROD_CACHE + context.getThisTaskId();
+        applicationContext = new AnnotationConfigWebApplicationContext();
+        zookeeperSession = applicationContext.getBean(ZookeeperSession.class);
         recordHotProdCacheId();
         startRefreshHotProdCacheThread();
     }
