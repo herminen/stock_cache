@@ -29,7 +29,7 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
     private static final long serialVersionUID = -2111127689003379972L;
 
 
-    private transient ApplicationContext applicationContext;
+    private ApplicationContext applicationContext;
 
     private String DEFAULT_LOCK_VALUE = "1";
 
@@ -37,7 +37,7 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
 
     private static final CountDownLatch COUNT_DOWN_LATCH = new CountDownLatch(1);
 
-    private transient ZooKeeper zooKeeper;
+    private ZooKeeper zooKeeper;
 
     public void init(){
         try {
@@ -111,11 +111,14 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
                 String[] nodes = node.split(SEP_SLASH);
                 String prePath = "";
                 for (String nodeName : nodes) {
-                    if(null == zooKeeper.exists(prePath + SEP_SLASH + nodeName, true)){
-                        zooKeeper.create(nodeName, DEFAULT_LOCK_VALUE.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                    if(StringUtils.isBlank(nodeName)){
+                        continue;
+                    }
+                    prePath = prePath + SEP_SLASH + nodeName;
+                    if(null == zooKeeper.exists(prePath, true)){
+                        zooKeeper.create(prePath, DEFAULT_LOCK_VALUE.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
                                 isPersist ? CreateMode.PERSISTENT : CreateMode.PERSISTENT);
-                        logger.warn("success to acquire lock for resource=[" + nodeName + "]");
-                        prePath = SEP_SLASH + nodeName;
+                        logger.warn("success to acquire lock for resource=[" + prePath + "]");
                     }
                 }
             }

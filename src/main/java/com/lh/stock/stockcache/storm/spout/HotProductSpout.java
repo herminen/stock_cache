@@ -2,6 +2,7 @@ package com.lh.stock.stockcache.storm.spout;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
+import com.lh.stock.stockcache.util.SpringContextUtil;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -13,12 +14,7 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
 import java.time.Duration;
 import java.util.Map;
@@ -35,17 +31,15 @@ public class HotProductSpout extends BaseRichSpout {
 
     private SpoutOutputCollector outputCollector;
 
-    private transient KafkaConsumer<String, String> hotProdInfoConsumer;
+    private KafkaConsumer<String, String> hotProdInfoConsumer;
 
-    private transient ApplicationContext applicationContext;
-    private transient DefaultKafkaConsumerFactory consumerFactory;
+    private DefaultKafkaConsumerFactory consumerFactory;
 
 
     @Override
     public void open(Map config, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
         this.outputCollector = spoutOutputCollector;
-        applicationContext = new AnnotationConfigWebApplicationContext();
-        consumerFactory = (DefaultKafkaConsumerFactory) applicationContext.getBean("kafkaConsumerFactory");
+        consumerFactory = (DefaultKafkaConsumerFactory) SpringContextUtil.getBean("kafkaConsumerFactory");
         this.hotProdInfoConsumer = (KafkaConsumer<String, String>) consumerFactory.
                 createConsumer(null, null, null, initAndGetConsumerProperties());
         hotProdInfoConsumer.subscribe(Lists.newArrayList("log-product"));
@@ -71,11 +65,11 @@ public class HotProductSpout extends BaseRichSpout {
     private Properties initAndGetConsumerProperties(){
         Map<String, Object> configurationProperties = consumerFactory.getConfigurationProperties();
         Properties props = new Properties();
-        props.put("bootstrap.servers", configurationProperties.get("bootstrapServers"));   //required
+        props.put("bootstrap.servers", configurationProperties.get("bootstrap.servers"));   //required
         props.put("group.id", "hot-prod-gourp");   //required
         props.put("enable.auto.commit", "false"); // 关闭自动提交
         props.put("auto.commit.interval.ms", "1000");
-        props.put("auto.offset.reset", configurationProperties.get("autoOffsetReset"));     //从最早的消息开始读取
+        props.put("auto.offset.reset", configurationProperties.get("auto.offset.reset"));     //从最早的消息开始读取
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");  //required
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"); //required
         return props;

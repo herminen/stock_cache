@@ -2,6 +2,7 @@ package com.lh.stock.stockcache.system;
 
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisNode;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;

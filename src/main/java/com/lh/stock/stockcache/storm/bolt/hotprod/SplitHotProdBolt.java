@@ -2,11 +2,11 @@ package com.lh.stock.stockcache.storm.bolt.hotprod;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.Lists;
 import com.lh.stock.stockcache.domain.HotProdInfo;
 import com.lh.stock.stockcache.storm.bolt.CountBolt;
 import com.lh.stock.stockcache.storm.hotcache.IMakeHotCache;
 import com.lh.stock.stockcache.storm.hotcache.impl.MakeHotProductCache;
+import com.lh.stock.stockcache.util.SpringContextUtil;
 import com.lh.stock.stockcache.zk.ZookeeperSession;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.storm.task.OutputCollector;
@@ -19,16 +19,7 @@ import org.apache.storm.utils.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.data.annotation.Transient;
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
-import java.util.List;
 import java.util.Map;
 
 import static com.lh.stock.stockcache.constant.CacheKeyConstants.ZK_HOT_PROD_CACHE;
@@ -50,16 +41,13 @@ public class SplitHotProdBolt extends BaseRichBolt{
 
     private String hotProdCacheTaskId;
 
-    private transient ZookeeperSession zookeeperSession;
-
-    private transient ApplicationContext applicationContext;
+    private ZookeeperSession zookeeperSession;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
         this.hotProdCacheTaskId = ZK_HOT_PROD_CACHE + context.getThisTaskId();
-        applicationContext = new AnnotationConfigWebApplicationContext();
-        zookeeperSession = applicationContext.getBean(ZookeeperSession.class);
+        zookeeperSession = SpringContextUtil.getBean(ZookeeperSession.class);
         recordHotProdCacheId();
         startRefreshHotProdCacheThread();
     }
