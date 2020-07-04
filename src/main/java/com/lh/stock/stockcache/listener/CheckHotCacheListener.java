@@ -38,7 +38,7 @@ public class CheckHotCacheListener{
         hotProdCacheTopology.setSpout("hotProdCacheSpout", new HotProductSpout(), 1);
         //add bolt to record cache data
         hotProdCacheTopology.setBolt("hotProdCacheBolt", new SplitHotProdBolt(), 1)
-                .setNumTasks(2).fieldsGrouping("hotProdCacheSpout", new Fields("hotProdInfo"));
+                .setNumTasks(1).fieldsGrouping("hotProdCacheSpout", new Fields("hotProdInfo"));
 
         Config config = new Config();
 

@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.lh.stock.stockcache.component.IFindFreshData;
 import com.lh.stock.stockcache.domain.KafkaMsgContext;
 import com.lh.stock.stockcache.domain.ProductBaseInfo;
+import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.stereotype.Service;
 
 import static com.lh.stock.stockcache.constant.KafkaMsgConstants.PROD_BASE_INFO;
@@ -19,7 +20,7 @@ public class FindProductBaseInfoData implements IFindFreshData<ProductBaseInfo> 
     public ProductBaseInfo findData(KafkaMsgContext msgContext) {
         //查询数据库或者调用rpc接口，这边简化一下- -！
         ProductBaseInfo productBaseInfo = new ProductBaseInfo();
-        productBaseInfo.setId(101L);
+        productBaseInfo.setId(NumberUtils.toLong( msgContext.getRequestId()));
         productBaseInfo.setColor("blue");
         productBaseInfo.setName("4008");
         productBaseInfo.setPictureList(Lists.newArrayList("image1.jpg", "image3.jpg"));

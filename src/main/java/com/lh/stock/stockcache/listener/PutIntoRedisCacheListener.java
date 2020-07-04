@@ -71,9 +71,9 @@ public class PutIntoRedisCacheListener {
                             KafkaMsgContext shopMsgContext = new KafkaMsgContext(String.valueOf(hotProdInfo.getShopId()), SHOP_BASE_INFO);
                             producer.sendMessage(shopMsgContext);
                         }
+                        zookeeperSession.releaseDistributeLock(ZK_HOT_CACHE_NODE_LOCK + taskId);
                     }
-
-
+                    zookeeperSession.releaseDistributeLock(ZK_CHACH_PROD_LOCK);
                 } catch (KeeperException |InterruptedException e) {
                     LOGGER.error("precache hot data error", e);
                     zookeeperSession.releaseDistributeLock(ZK_HOT_CACHE_NODE_LOCK + taskId);

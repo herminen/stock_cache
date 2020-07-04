@@ -2,6 +2,7 @@ package com.lh.stock.stockcache.storm.bolt.hotprod;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.lh.stock.stockcache.domain.HotProdInfo;
 import com.lh.stock.stockcache.domain.ZKHotProdCacheData;
 import com.lh.stock.stockcache.storm.bolt.CountBolt;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 import static com.lh.stock.stockcache.constant.CacheKeyConstants.*;
+import static com.lh.stock.stockcache.constant.ComConstants.DEFAULT_LOCK_VALUE;
 
 /**
  * @Author: liuhai
@@ -64,19 +66,22 @@ public class SplitHotProdBolt extends BaseRichBolt{
         //在zk上创建热点缓存列表信息
         try {
             zookeeperSession.acquireDistributeLock(ZK_HOT_CHACH_LOCK);
-            zookeeperSession.createPersistNode(ZK_CACHE_LIST_NODE, true);
+            zookeeperSession.createNode(ZK_CACHE_LIST_NODE, false);
             zookeeperSession.acquireDistributeLock(hotProdCacheNodeLock);
             String nodeValue = zookeeperSession.getNodeValue(ZK_CACHE_LIST_NODE);
             ZKHotProdCacheData zkHotProdCacheData;
-            if(StringUtils.isBlank(nodeValue)){
+            if(DEFAULT_LOCK_VALUE.equals(nodeValue) || StringUtils.isBlank(nodeValue)){
                 zkHotProdCacheData = new ZKHotProdCacheData();
+            }else{
+                zkHotProdCacheData = JSONObject.parseObject(nodeValue, ZKHotProdCacheData.class);
             }
-            zkHotProdCacheData = JSONObject.parseObject(nodeValue, ZKHotProdCacheData.class);
             zkHotProdCacheData.addCacheNode(hotProdCacheNode);
             zkHotProdCacheData.setTaskId(context.getThisTaskId());
             zkHotProdCacheData.setHasCached(false);
 
-            zookeeperSession.setNodeValue(ZK_CACHE_LIST_NODE, JSONObject.toJSONString(zkHotProdCacheData));
+            zookeeperSession.setNodeValue(ZK_CACHE_LIST_NODE, JSONObject.toJSONString(zkHotProdCacheData, SerializerFeature.WRITE_MAP_NULL_FEATURES));
+            zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
+            zookeeperSession.releaseDistributeLock(ZK_HOT_CHACH_LOCK);
         } catch (KeeperException | InterruptedException e) {
             LOGGER.error("create cache period error", e);
             zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
@@ -92,10 +97,13 @@ public class SplitHotProdBolt extends BaseRichBolt{
             IMakeHotCache<HotProdInfo> makeHotCache = new MakeHotProductCache(hotProdInfoCache);
             while(true) {
                 try {
-                    zookeeperSession.createPersistNode(hotProdCacheNode, false);
+                    zookeeperSession.acquireDistributeLock(hotProdCacheNodeLock);
+                    zookeeperSession.createNode(hotProdCacheNode, false);
                     zookeeperSession.setNodeValue(hotProdCacheNode, JSONArray.toJSONString(makeHotCache.makeCache()));
+                    zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
                 } catch (KeeperException | InterruptedException e) {
                     LOGGER.error("record cache to zookeeper error", e);
+                    zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
                 }
                 Utils.sleep(5000);
             }

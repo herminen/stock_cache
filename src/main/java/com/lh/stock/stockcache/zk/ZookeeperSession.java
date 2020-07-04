@@ -17,6 +17,7 @@ import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;
 
 import static com.lh.stock.stockcache.constant.CacheKeyConstants.ZK_STOCK_CACHE;
+import static com.lh.stock.stockcache.constant.ComConstants.DEFAULT_LOCK_VALUE;
 import static com.lh.stock.stockcache.constant.ComConstants.SEP_SLASH;
 
 /**
@@ -31,8 +32,6 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
 
     private ApplicationContext applicationContext;
 
-    private String DEFAULT_LOCK_VALUE = "1";
-
     private static Logger logger = LoggerFactory.getLogger(ZookeeperSession.class);
 
     private static final CountDownLatch COUNT_DOWN_LATCH = new CountDownLatch(1);
@@ -44,10 +43,10 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
             zooKeeper = new ZooKeeper(applicationContext.getEnvironment().getProperty("zookeeper.hosts"),
                     5000, this);
 
-            if(null != zooKeeper.exists(ZK_STOCK_CACHE, true)){
-                zooKeeper.delete(ZK_STOCK_CACHE, -1);
+            if(null == zooKeeper.exists(ZK_STOCK_CACHE, true)){
+//                zooKeeper.delete(ZK_STOCK_CACHE, -1);
+                zooKeeper.create(ZK_STOCK_CACHE, "".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
-            zooKeeper.create(ZK_STOCK_CACHE, "".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
             COUNT_DOWN_LATCH.await();
             logger.warn("ZooKeeper session established......");
@@ -73,7 +72,7 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
                     Thread.sleep(500);
                     zooKeeper.create(resource, DEFAULT_LOCK_VALUE.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
                 } catch (Exception e2) {
-                    logger.error("can not get distribute lock for resource[" + resource + "]");
+                    logger.warn("can not get distribute lock for resource[{}], errormessage:{}", resource, e2.getMessage());
                     /*if(count >=10){
                         throw e;
                     }*/
@@ -102,7 +101,7 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
      * @throws KeeperException
      * @throws InterruptedException
      */
-    public void createPersistNode(String node, boolean isPersist) throws KeeperException, InterruptedException {
+    public void createNode(String node, boolean isPersist) throws KeeperException, InterruptedException {
         if(StringUtils.isBlank(node)){
             throw new IllegalArgumentException("lock node can not be null or blank");
         }
@@ -117,7 +116,7 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
                     prePath = prePath + SEP_SLASH + nodeName;
                     if(null == zooKeeper.exists(prePath, true)){
                         zooKeeper.create(prePath, DEFAULT_LOCK_VALUE.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                                isPersist ? CreateMode.PERSISTENT : CreateMode.PERSISTENT);
+                                isPersist ? CreateMode.PERSISTENT : CreateMode.EPHEMERAL);
                         logger.warn("success to acquire lock for resource=[" + prePath + "]");
                     }
                 }
@@ -145,6 +144,9 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
     }
 
     public String getNodeValue(String node) throws KeeperException, InterruptedException {
+        if(null == zooKeeper.exists(node, true)){
+            return StringUtils.EMPTY;
+        }
         try {
             return new String(zooKeeper.getData(node, this, new Stat()), Charset.forName("UTF-8"));
         }catch (Exception e){
@@ -181,6 +183,10 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
                     logger.warn("Node(" + event.getPath() + ")DataChanged");
                     zooKeeper.exists(event.getPath(), true);
                 }
+            }else if (event.getState() == Event.KeeperState.Expired) {
+                System.out.println("[SUC-CORE] session expired. now rebuilding");
+                zooKeeper.close();
+                init();
             }
 
         }  catch(Exception e) {}

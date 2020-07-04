@@ -9,4 +9,6 @@ public class ComConstants {
     public static final String SEP_SLASH = "/";
     public static final String SEP_UNDERLINE = "_";
     public static final String SEP_COMA = ",";
+
+    public static String DEFAULT_LOCK_VALUE = "1";
 }
