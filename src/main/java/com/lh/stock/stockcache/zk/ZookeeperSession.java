@@ -88,7 +88,7 @@ public class ZookeeperSession implements Serializable, ApplicationContextAware, 
     public void releaseDistributeLock(String resource){
         try {
             zooKeeper.delete(resource, -1);
-            logger.error("release lock for resource=[" + resource + "]");
+            logger.info("release lock for resource=[" + resource + "]");
         } catch (InterruptedException | KeeperException e) {
             logger.error("release lock for resource=" + resource + " error:", e);
         }
