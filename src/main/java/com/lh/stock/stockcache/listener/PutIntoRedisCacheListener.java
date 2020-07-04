@@ -2,6 +2,8 @@ package com.lh.stock.stockcache.listener;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.google.common.collect.Sets;
 import com.lh.stock.stockcache.domain.HotProdInfo;
 import com.lh.stock.stockcache.domain.KafkaMsgContext;
 import com.lh.stock.stockcache.domain.ZKHotProdCacheData;
@@ -17,9 +19,11 @@ import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 
 import static com.lh.stock.stockcache.constant.CacheKeyConstants.*;
+import static com.lh.stock.stockcache.constant.ComConstants.DEFAULT_LOCK_VALUE;
 import static com.lh.stock.stockcache.constant.ComConstants.SEP_UNDERLINE;
 import static com.lh.stock.stockcache.constant.KafkaMsgConstants.PROD_BASE_INFO;
 import static com.lh.stock.stockcache.constant.KafkaMsgConstants.SHOP_BASE_INFO;
@@ -50,16 +54,22 @@ public class PutIntoRedisCacheListener {
                 try {
                     zookeeperSession.acquireDistributeLock(ZK_CHACH_PROD_LOCK);
                     String nodeValue = zookeeperSession.getNodeValue(ZK_CACHE_LIST_NODE);
-                    if(StringUtils.isBlank(nodeValue)){
+                    if(DEFAULT_LOCK_VALUE.equals(nodeValue) || StringUtils.isBlank(nodeValue)){
+                        zookeeperSession.releaseDistributeLock(ZK_CHACH_PROD_LOCK);
                         continue;
                     }
-                    ZKHotProdCacheData zkHotProdCacheData = JSONObject.parseObject(nodeValue, ZKHotProdCacheData.class);
-                    for (String cacheNode : zkHotProdCacheData.getCacheNodes()) {
-                        taskId = cacheNode.substring(cacheNode.lastIndexOf(SEP_UNDERLINE));
+                    HashSet<ZKHotProdCacheData> zkHotProdCacheDatas = Sets.newHashSet(JSONArray.parseArray(nodeValue, ZKHotProdCacheData.class));
+                    for (ZKHotProdCacheData hotProdCacheData : zkHotProdCacheDatas) {
+                        if(hotProdCacheData.getHasCached()){
+                            continue;
+                        }
+                        String cacheNode = hotProdCacheData.getCacheNode();
+                        taskId = cacheNode.substring(cacheNode.lastIndexOf(SEP_UNDERLINE) + 1);
                         zookeeperSession.acquireDistributeLock(ZK_HOT_CACHE_NODE_LOCK + taskId);
                         String hotProdCache = zookeeperSession.getNodeValue(ZK_CACHE_HOT_PROD_NODE + taskId);
                         if(StringUtils.isBlank(hotProdCache)){
                             zookeeperSession.releaseDistributeLock(ZK_HOT_CACHE_NODE_LOCK + taskId);
+                            break;
                         }
                         List<HotProdInfo> hotProdInfos = JSONArray.parseArray(hotProdCache, HotProdInfo.class);
                         //refresh cache system
@@ -71,11 +81,16 @@ public class PutIntoRedisCacheListener {
                             KafkaMsgContext shopMsgContext = new KafkaMsgContext(String.valueOf(hotProdInfo.getShopId()), SHOP_BASE_INFO);
                             producer.sendMessage(shopMsgContext);
                         }
+                        hotProdCacheData.setHasCached(true);
                         zookeeperSession.releaseDistributeLock(ZK_HOT_CACHE_NODE_LOCK + taskId);
                     }
+                    zookeeperSession.acquireDistributeLock(ZK_HOT_CHACH_LOCK);
+                    zookeeperSession.setNodeValue(ZK_CACHE_LIST_NODE, JSONArray.toJSONString(zkHotProdCacheDatas, SerializerFeature.WRITE_MAP_NULL_FEATURES));
+                    zookeeperSession.releaseDistributeLock(ZK_HOT_CHACH_LOCK);
                     zookeeperSession.releaseDistributeLock(ZK_CHACH_PROD_LOCK);
-                } catch (KeeperException |InterruptedException e) {
+                } catch (Exception e) {
                     LOGGER.error("precache hot data error", e);
+                    zookeeperSession.releaseDistributeLock(ZK_HOT_CHACH_LOCK);
                     zookeeperSession.releaseDistributeLock(ZK_HOT_CACHE_NODE_LOCK + taskId);
                     zookeeperSession.releaseDistributeLock(ZK_CHACH_PROD_LOCK);
                 }

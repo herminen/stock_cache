@@ -3,6 +3,7 @@ package com.lh.stock.stockcache.storm.bolt.hotprod;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.google.common.collect.Sets;
 import com.lh.stock.stockcache.domain.HotProdInfo;
 import com.lh.stock.stockcache.domain.ZKHotProdCacheData;
 import com.lh.stock.stockcache.storm.bolt.CountBolt;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Set;
 
 import static com.lh.stock.stockcache.constant.CacheKeyConstants.*;
 import static com.lh.stock.stockcache.constant.ComConstants.DEFAULT_LOCK_VALUE;
@@ -64,29 +66,32 @@ public class SplitHotProdBolt extends BaseRichBolt{
      */
     private void recordHotProdCacheId() {
         //在zk上创建热点缓存列表信息
-        try {
-            zookeeperSession.acquireDistributeLock(ZK_HOT_CHACH_LOCK);
-            zookeeperSession.createNode(ZK_CACHE_LIST_NODE, false);
-            zookeeperSession.acquireDistributeLock(hotProdCacheNodeLock);
-            String nodeValue = zookeeperSession.getNodeValue(ZK_CACHE_LIST_NODE);
-            ZKHotProdCacheData zkHotProdCacheData;
-            if(DEFAULT_LOCK_VALUE.equals(nodeValue) || StringUtils.isBlank(nodeValue)){
-                zkHotProdCacheData = new ZKHotProdCacheData();
-            }else{
-                zkHotProdCacheData = JSONObject.parseObject(nodeValue, ZKHotProdCacheData.class);
-            }
-            zkHotProdCacheData.addCacheNode(hotProdCacheNode);
-            zkHotProdCacheData.setTaskId(context.getThisTaskId());
-            zkHotProdCacheData.setHasCached(false);
+        new Thread(()->{
+            while ((true)) {
+                try {
+                    zookeeperSession.acquireDistributeLock(ZK_HOT_CHACH_LOCK);
+                    zookeeperSession.createNode(ZK_CACHE_LIST_NODE, false);
+                    zookeeperSession.acquireDistributeLock(hotProdCacheNodeLock);
+                    String nodeValue = zookeeperSession.getNodeValue(ZK_CACHE_LIST_NODE);
+                    Set<ZKHotProdCacheData> zkHotProdCacheDatas;
+                    if (DEFAULT_LOCK_VALUE.equals(nodeValue) || StringUtils.isBlank(nodeValue)) {
+                        zkHotProdCacheDatas = Sets.newHashSetWithExpectedSize(10);
+                    } else {
+                        zkHotProdCacheDatas = Sets.newHashSet(JSONArray.parseArray(nodeValue, ZKHotProdCacheData.class));
+                    }
+                    zkHotProdCacheDatas.add(new ZKHotProdCacheData(hotProdCacheNode, false, context.getThisTaskId()));
 
-            zookeeperSession.setNodeValue(ZK_CACHE_LIST_NODE, JSONObject.toJSONString(zkHotProdCacheData, SerializerFeature.WRITE_MAP_NULL_FEATURES));
-            zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
-            zookeeperSession.releaseDistributeLock(ZK_HOT_CHACH_LOCK);
-        } catch (KeeperException | InterruptedException e) {
-            LOGGER.error("create cache period error", e);
-            zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
-            zookeeperSession.releaseDistributeLock(ZK_HOT_CHACH_LOCK);
-        }
+                    zookeeperSession.setNodeValue(ZK_CACHE_LIST_NODE, JSONArray.toJSONString(zkHotProdCacheDatas, SerializerFeature.WRITE_MAP_NULL_FEATURES));
+                    zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
+                    zookeeperSession.releaseDistributeLock(ZK_HOT_CHACH_LOCK);
+                } catch (KeeperException | InterruptedException e) {
+                    LOGGER.error("create cache period error", e);
+                    zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
+                    zookeeperSession.releaseDistributeLock(ZK_HOT_CHACH_LOCK);
+                }
+                Utils.sleep(5000);
+            }
+        }).start();
     }
 
     /**
@@ -112,14 +117,16 @@ public class SplitHotProdBolt extends BaseRichBolt{
 
     @Override
     public void execute(Tuple input) {
-        String hotProdInfo = input.getStringByField("hotProdInfo");
+        JSONObject hotProdInfo = (JSONObject)input.getValueByField("hotProdInfo");
         LOGGER.warn("get hotprodcache: {}", hotProdInfo);
-        HotProdInfo hotProdCache = JSONObject.parseObject(hotProdInfo, HotProdInfo.class);
+        HotProdInfo hotProdCache = hotProdInfo.getObject("uri_args",  HotProdInfo.class);
         if(hotProdInfoCache.containsKey(hotProdCache.getProdId())){
-            hotProdCache.increaseVisitCount();
+            hotProdCache = hotProdInfoCache.get(hotProdCache.getProdId());
             hotProdInfoCache.remove(hotProdCache.getProdId());
         }
+        hotProdCache.increaseVisitCount();
         hotProdInfoCache.put(hotProdCache.getProdId(), hotProdCache);
+        //todo 将该节点的缓存预热状态置为未预热
     }
 
     @Override

@@ -1,11 +1,10 @@
 package com.lh.stock.stockcache.domain;
 
 import com.google.common.collect.Sets;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -18,17 +17,28 @@ import java.util.Set;
 @Getter
 @Setter
 @ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class ZKHotProdCacheData implements Serializable {
     private static final long serialVersionUID = 659703363850097606L;
 
-    private Set<String> cacheNodes = Sets.newHashSetWithExpectedSize(10);
+    private String cacheNode;
 
     private Boolean hasCached;
 
     private int taskId;
 
-    public void addCacheNode(String nodeName){
-        cacheNodes.add(nodeName);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ZKHotProdCacheData that = (ZKHotProdCacheData) o;
+        return taskId == that.taskId &&
+                Objects.equals(cacheNode, that.cacheNode);
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(cacheNode, taskId);
+    }
 }
