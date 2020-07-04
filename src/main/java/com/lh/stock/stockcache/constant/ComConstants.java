@@ -7,5 +7,6 @@ package com.lh.stock.stockcache.constant;
 public class ComConstants {
 
     public static final String SEP_SLASH = "/";
+    public static final String SEP_UNDERLINE = "_";
     public static final String SEP_COMA = ",";
 }
