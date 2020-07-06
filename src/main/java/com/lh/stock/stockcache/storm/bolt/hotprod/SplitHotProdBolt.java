@@ -126,7 +126,33 @@ public class SplitHotProdBolt extends BaseRichBolt{
         }
         hotProdCache.increaseVisitCount();
         hotProdInfoCache.put(hotProdCache.getProdId(), hotProdCache);
-        //todo 将该节点的缓存预热状态置为未预热
+        //将该节点的缓存预热状态置为未预热
+        rewindNodeStatus();
+    }
+
+    /**
+     * 更新节点缓存刷新状态--缓存已更新，还原缓存预热状态
+     */
+    private void rewindNodeStatus() {
+
+        try {
+            zookeeperSession.acquireDistributeLock(ZK_HOT_CHACH_LOCK);
+            zookeeperSession.acquireDistributeLock(hotProdCacheNodeLock);
+            String nodeValue = zookeeperSession.getNodeValue(ZK_CACHE_LIST_NODE);
+            if (DEFAULT_LOCK_VALUE.equals(nodeValue) || StringUtils.isBlank(nodeValue)) {
+                return;
+            }
+            Set<ZKHotProdCacheData> zkHotProdCacheDatas = Sets.newHashSet(JSONArray.parseArray(nodeValue, ZKHotProdCacheData.class));
+            zkHotProdCacheDatas.add(new ZKHotProdCacheData(hotProdCacheNode, false, context.getThisTaskId()));
+
+            zookeeperSession.setNodeValue(ZK_CACHE_LIST_NODE, JSONArray.toJSONString(zkHotProdCacheDatas, SerializerFeature.WRITE_MAP_NULL_FEATURES));
+            zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
+            zookeeperSession.releaseDistributeLock(ZK_HOT_CHACH_LOCK);
+        }catch (Exception e){
+            zookeeperSession.releaseDistributeLock(hotProdCacheNodeLock);
+            zookeeperSession.releaseDistributeLock(ZK_HOT_CHACH_LOCK);
+        }
+
     }
 
     @Override
