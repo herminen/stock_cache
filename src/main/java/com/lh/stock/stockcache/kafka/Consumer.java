@@ -8,10 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
@@ -21,10 +18,8 @@ import org.springframework.stereotype.Service;
  * @Date: 2020/6/6 11:49
  */
 @Service
-public class Consumer implements ApplicationContextAware {
+public class Consumer {
     private final Logger logger = LoggerFactory.getLogger(Consumer.class);
-
-    private ApplicationContext applicationContext;
 
     @Autowired
     private IFreshCache freshCache;
@@ -32,10 +27,6 @@ public class Consumer implements ApplicationContextAware {
     @Autowired
     private IFindDataService findDataService;
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
 
     @KafkaListener(id = "stock-cache-group1", topics={"${kafka.stock.topic}"})
     public void consume(ConsumerRecord<Integer, String> record, Acknowledgment ack){
